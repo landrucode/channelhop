@@ -1,0 +1,4 @@
+# User-specific config and secrets
+.claude/
+*.env
+.env*
