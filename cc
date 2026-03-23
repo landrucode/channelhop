@@ -39,7 +39,7 @@ fi
 # Warn if stale discord server.ts processes exist — they hold bot connections
 # from previous sessions. Symptoms: multiple bots appear online, wrong-channel
 # typing indicators. Fix: pkill -f 'bun server.ts'
-STALE=$(pgrep -f 'bun server.ts' 2>/dev/null | tr '\n' ' ')
+STALE=$(pgrep -f 'bun server.ts' 2>/dev/null | tr '\n' ' ' || true)
 if [[ -n "$STALE" ]]; then
   echo "warning: stale discord server.ts process(es) detected: $STALE" >&2
   echo "         run: pkill -f 'bun server.ts'  to clear before starting" >&2
@@ -89,8 +89,16 @@ trap cleanup EXIT INT TERM HUP
 # Level 1: HOME except .claude
 for item in "$REAL_HOME"/.* "$REAL_HOME"/*; do
   name=$(basename "$item")
-  [[ "$name" == "." || "$name" == ".." || "$name" == ".claude" ]] && continue
+  [[ "$name" == "." || "$name" == ".." || "$name" == ".claude" || "$name" == ".local" ]] && continue
   ln -sf "$item" "$FAKE_HOME/$name"
+done
+
+# Level 1.5: .local — create as real directory, symlink contents
+mkdir -p "$FAKE_HOME/.local"
+for item in "$REAL_HOME/.local"/.* "$REAL_HOME/.local"/*; do
+  name=$(basename "$item")
+  [[ "$name" == "." || "$name" == ".." ]] && continue
+  ln -sf "$item" "$FAKE_HOME/.local/$name"
 done
 
 # Level 2: .claude except channels
